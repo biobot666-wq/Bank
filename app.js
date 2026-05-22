@@ -1,7 +1,10 @@
 // app.js — логика приложения «Бюджет».
-// Шаг 2: блок «Кошелёк» — счета (добавление, удаление, авто-сумма).
+// Шаг 3: блок «Бюджет на месяц» — категории (добавление, удаление, редактирование).
 
-// --- Хранение данных ---
+// =====================================================
+//  СЧЕТА (блок «Кошелёк»)
+// =====================================================
+
 const ACCOUNTS_KEY = "budget_app_accounts";
 
 // Счета по умолчанию (показываются при самом первом запуске)
@@ -11,7 +14,6 @@ const DEFAULT_ACCOUNTS = [
   { id: 3, name: "Наличные", balance: 58300 },
 ];
 
-// Загрузить счета из памяти браузера
 function loadAccounts() {
   const saved = localStorage.getItem(ACCOUNTS_KEY);
   if (saved) {
@@ -20,20 +22,55 @@ function loadAccounts() {
   return DEFAULT_ACCOUNTS;
 }
 
-// Сохранить счета в память браузера
 function saveAccounts() {
   localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 }
 
 let accounts = loadAccounts();
 
-// --- Вспомогательное ---
+// =====================================================
+//  КАТЕГОРИИ (блок «Бюджет на месяц»)
+// =====================================================
+
+const CATEGORIES_KEY = "budget_app_categories";
+
+// Категории по умолчанию (показываются при самом первом запуске).
+// planned — целевая сумма расходов на месяц, spent — уже потрачено.
+const DEFAULT_CATEGORIES = [
+  { id: 1, name: "Продукты", planned: 89500, spent: 0 },
+  { id: 2, name: "Развлечения", planned: 10000, spent: 0 },
+  { id: 3, name: "Хозяйство", planned: 30000, spent: 0 },
+  { id: 4, name: "Спорт", planned: 40000, spent: 0 },
+  { id: 5, name: "Непредвиденные", planned: 15000, spent: 0 },
+];
+
+function loadCategories() {
+  const saved = localStorage.getItem(CATEGORIES_KEY);
+  if (saved) {
+    return JSON.parse(saved);
+  }
+  return DEFAULT_CATEGORIES;
+}
+
+function saveCategories() {
+  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+}
+
+let categories = loadCategories();
+
+// =====================================================
+//  ВСПОМОГАТЕЛЬНОЕ
+// =====================================================
+
 // Красивый формат числа: 100000 -> "100 000"
 function formatMoney(n) {
   return n.toLocaleString("ru-RU");
 }
 
-// --- Отрисовка блока «Кошелёк» ---
+// =====================================================
+//  ОТРИСОВКА: блок «Кошелёк»
+// =====================================================
+
 function renderWallet() {
   const list = document.getElementById("accountsList");
   list.innerHTML = "";
@@ -66,7 +103,6 @@ function renderWallet() {
   document.getElementById("walletTotal").textContent = formatMoney(total);
 }
 
-// --- Действия со счетами ---
 function addAccount() {
   const nameInput = document.getElementById("newAccountName");
   const balanceInput = document.getElementById("newAccountBalance");
@@ -93,6 +129,85 @@ function removeAccount(id) {
   renderWallet();
 }
 
-// --- Запуск ---
+// =====================================================
+//  ОТРИСОВКА: блок «Бюджет на месяц»
+// =====================================================
+
+function renderBudget() {
+  const list = document.getElementById("categoriesList");
+  list.innerHTML = "";
+
+  for (const cat of categories) {
+    const li = document.createElement("li");
+
+    // Поле «название категории» — редактируется прямо в строке
+    const name = document.createElement("input");
+    name.type = "text";
+    name.className = "name";
+    name.value = cat.name;
+    name.addEventListener("change", () => {
+      cat.name = name.value.trim();
+      saveCategories();
+    });
+
+    // Поле «план» — целевая сумма расходов на месяц
+    const planned = document.createElement("input");
+    planned.type = "number";
+    planned.className = "value";
+    planned.value = cat.planned;
+    planned.addEventListener("change", () => {
+      cat.planned = Number(planned.value) || 0;
+      saveCategories();
+    });
+
+    const del = document.createElement("button");
+    del.className = "btn-del";
+    del.textContent = "×";
+    del.title = "Удалить категорию";
+    del.addEventListener("click", () => removeCategory(cat.id));
+
+    li.append(name, planned, del);
+    list.append(li);
+  }
+}
+
+function addCategory() {
+  const nameInput = document.getElementById("newCategoryName");
+  const plannedInput = document.getElementById("newCategoryPlanned");
+
+  const name = nameInput.value.trim();
+  const planned = Number(plannedInput.value);
+
+  if (name === "") {
+    alert("Введите название категории");
+    return;
+  }
+
+  categories.push({
+    id: Date.now(),
+    name: name,
+    planned: planned || 0,
+    spent: 0,
+  });
+  saveCategories();
+  renderBudget();
+
+  nameInput.value = "";
+  plannedInput.value = "";
+}
+
+function removeCategory(id) {
+  categories = categories.filter((cat) => cat.id !== id);
+  saveCategories();
+  renderBudget();
+}
+
+// =====================================================
+//  ЗАПУСК
+// =====================================================
+
 document.getElementById("addAccountBtn").addEventListener("click", addAccount);
+document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
+
 renderWallet();
+renderBudget();

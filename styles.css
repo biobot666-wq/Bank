@@ -125,6 +125,23 @@ body {
   font-weight: 600;
 }
 
+/* Редактируемые поля прямо в строке списка */
+.list li input {
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+}
+
+.list li input.name {
+  min-width: 0;
+}
+
+.list li input.value {
+  width: 100px;
+  text-align: right;
+}
+
 /* Кнопка удаления строки */
 .btn-del {
   background: none;
