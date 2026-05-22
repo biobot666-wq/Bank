@@ -1,0 +1,180 @@
+/* Базовые настройки */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #1c1c1e;
+}
+
+/* Шапка */
+.topbar {
+  background: #ffffff;
+  padding: 16px 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.topbar h1 {
+  font-size: 22px;
+}
+
+/* Контейнер страницы */
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Карточка-блок */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.card h2 {
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+/* Ручной ввод расхода */
+.expense-input {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.expense-amount {
+  flex: 1;
+  font-size: 18px;
+  padding: 10px 12px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+}
+
+.currency-select {
+  font-size: 16px;
+  padding: 10px;
+  border: 1px solid #d0d0d0;
+  border-radius: 8px;
+}
+
+/* Кнопки */
+.btn {
+  font-size: 15px;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #0a84ff;
+  color: #ffffff;
+}
+
+.btn-attach {
+  width: 100%;
+  background: #f0f2f5;
+  color: #1c1c1e;
+  border: 1px dashed #b0b0b0;
+  padding: 16px;
+}
+
+/* Две колонки: бюджет и кошелёк */
+.columns {
+  display: flex;
+  gap: 16px;
+}
+
+.columns .card {
+  flex: 1;
+}
+
+/* Списки */
+.list {
+  list-style: none;
+}
+
+.list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.list li:last-child {
+  border-bottom: none;
+}
+
+.list .value {
+  font-weight: 600;
+}
+
+/* Кошелёк */
+.wallet-total {
+  font-size: 28px;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+/* Сбережения */
+.savings {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.savings-arrow {
+  font-size: 22px;
+  color: #0a84ff;
+}
+
+.savings-label {
+  flex: 1;
+}
+
+.savings-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Цели */
+.goals-list li {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.goal-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.progress {
+  height: 10px;
+  background: #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.progress-bar {
+  height: 100%;
+  background: #34c759;
+  border-radius: 5px;
+}
+
+/* Адаптив под телефон */
+@media (max-width: 520px) {
+  .columns {
+    flex-direction: column;
+  }
+}

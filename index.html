@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Бюджет</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Шапка -->
+  <header class="topbar">
+    <h1>Бюджет</h1>
+  </header>
+
+  <main class="page">
+
+    <!-- Ручной ввод расхода -->
+    <section class="card expense-input">
+      <input type="number" class="expense-amount" placeholder="0" value="500">
+      <select class="currency-select">
+        <option value="RUB" selected>руб.</option>
+      </select>
+      <button class="btn btn-primary">Добавить расход</button>
+    </section>
+
+    <!-- Два блока: бюджет и кошелёк -->
+    <div class="columns">
+
+      <!-- Бюджет на месяц -->
+      <section class="card budget">
+        <h2>Твой бюджет на месяц</h2>
+        <ul class="list">
+          <li><span class="name">Продукты</span><span class="value">89 500</span></li>
+          <li><span class="name">Развлечения</span><span class="value">10 000</span></li>
+          <li><span class="name">Хозяйство</span><span class="value">30 000</span></li>
+          <li><span class="name">Спорт</span><span class="value">40 000</span></li>
+          <li><span class="name">Непредвиденные</span><span class="value">15 000</span></li>
+        </ul>
+      </section>
+
+      <!-- Кошелёк -->
+      <section class="card wallet">
+        <h2>Кошелёк</h2>
+        <div class="wallet-total">159 500</div>
+        <ul class="list accounts">
+          <li><span class="name">Т-Банк</span><span class="value">100 000</span></li>
+          <li><span class="name">Сбер</span><span class="value">1 200</span></li>
+          <li><span class="name">Наличные</span><span class="value">58 300</span></li>
+        </ul>
+      </section>
+
+    </div>
+
+    <!-- Желаемые сбережения -->
+    <section class="card savings">
+      <span class="savings-arrow">↓</span>
+      <span class="savings-label">Желаемые сбережения</span>
+      <span class="savings-value">70 000</span>
+    </section>
+
+    <!-- Цели -->
+    <section class="card goals">
+      <h2>Цели</h2>
+      <ul class="list goals-list">
+        <li>
+          <div class="goal-head">
+            <span class="name">Др на берегу</span>
+            <span class="value">5 000 / 30 000</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: 17%"></div></div>
+        </li>
+        <li>
+          <div class="goal-head">
+            <span class="name">Поездка в Тайланд</span>
+            <span class="value">9 000 / 150 000</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: 6%"></div></div>
+        </li>
+        <li>
+          <div class="goal-head">
+            <span class="name">Новое фортепиано</span>
+            <span class="value">6 000 / 80 000</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: 8%"></div></div>
+        </li>
+        <li>
+          <div class="goal-head">
+            <span class="name">Машина</span>
+            <span class="value">10 000 / 1 500 000</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: 1%"></div></div>
+        </li>
+        <li>
+          <div class="goal-head">
+            <span class="name">Операция на нёсик</span>
+            <span class="value">0 / 200 000</span>
+          </div>
+          <div class="progress"><div class="progress-bar" style="width: 0%"></div></div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Прикрепить выписку -->
+    <section class="card attach">
+      <button class="btn btn-attach">Прикрепить выписку PDF</button>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
