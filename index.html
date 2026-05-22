@@ -42,12 +42,13 @@
       <!-- Кошелёк -->
       <section class="card wallet">
         <h2>Кошелёк</h2>
-        <div class="wallet-total">159 500</div>
-        <ul class="list accounts">
-          <li><span class="name">Т-Банк</span><span class="value">100 000</span></li>
-          <li><span class="name">Сбер</span><span class="value">1 200</span></li>
-          <li><span class="name">Наличные</span><span class="value">58 300</span></li>
-        </ul>
+        <div class="wallet-total" id="walletTotal">0</div>
+        <ul class="list accounts" id="accountsList"></ul>
+        <div class="add-row">
+          <input type="text" id="newAccountName" placeholder="Название счёта">
+          <input type="number" id="newAccountBalance" placeholder="0">
+          <button class="btn btn-primary" id="addAccountBtn">+</button>
+        </div>
       </section>
 
     </div>

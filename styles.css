@@ -107,6 +107,8 @@ body {
 .list li {
   display: flex;
   justify-content: space-between;
+  align-items: center;
+  gap: 8px;
   padding: 8px 0;
   border-bottom: 1px solid #f0f0f0;
 }
@@ -115,8 +117,50 @@ body {
   border-bottom: none;
 }
 
+.list .name {
+  flex: 1;
+}
+
 .list .value {
   font-weight: 600;
+}
+
+/* Кнопка удаления строки */
+.btn-del {
+  background: none;
+  border: none;
+  color: #ff3b30;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 4px;
+  cursor: pointer;
+}
+
+/* Строка добавления (счёт, категория и т.п.) */
+.add-row {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.add-row input {
+  min-width: 0;
+  font-size: 14px;
+  padding: 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+}
+
+.add-row input[type="text"] {
+  flex: 1;
+}
+
+.add-row input[type="number"] {
+  width: 90px;
+}
+
+.add-row .btn {
+  padding: 8px 14px;
 }
 
 /* Кошелёк */
