@@ -56,7 +56,12 @@
     <section class="card savings">
       <span class="savings-arrow">↓</span>
       <span class="savings-label">Желаемые сбережения</span>
-      <span class="savings-value">70 000</span>
+      <input type="number" id="savingsValue" class="savings-value">
+    </section>
+
+    <!-- Предупреждение: категории + сбережения > Кошелёк -->
+    <section class="card warning" id="warningCard" hidden>
+      <span id="warningText"></span>
     </section>
 
     <!-- Цели -->

@@ -1,5 +1,5 @@
 // app.js — логика приложения «Бюджет».
-// Шаг 3: блок «Бюджет на месяц» — категории (добавление, удаление, редактирование).
+// Шаг 4: сбережения + проверка равенства «категории + сбережения ≤ Кошелёк».
 
 // =====================================================
 //  СЧЕТА (блок «Кошелёк»)
@@ -59,12 +59,59 @@ function saveCategories() {
 let categories = loadCategories();
 
 // =====================================================
+//  СБЕРЕЖЕНИЯ (желаемая сумма, которую хочется отложить)
+// =====================================================
+
+const SAVINGS_KEY = "budget_app_savings";
+const DEFAULT_SAVINGS = 70000;
+
+function loadSavings() {
+  const saved = localStorage.getItem(SAVINGS_KEY);
+  if (saved !== null) {
+    return Number(saved);
+  }
+  return DEFAULT_SAVINGS;
+}
+
+function saveSavings() {
+  localStorage.setItem(SAVINGS_KEY, String(savings));
+}
+
+let savings = loadSavings();
+
+// =====================================================
 //  ВСПОМОГАТЕЛЬНОЕ
 // =====================================================
 
 // Красивый формат числа: 100000 -> "100 000"
 function formatMoney(n) {
   return n.toLocaleString("ru-RU");
+}
+
+// =====================================================
+//  ПРОВЕРКА РАВЕНСТВА: категории + сбережения ≤ Кошелёк
+// =====================================================
+
+function updateWarning() {
+  const wallet = accounts.reduce((s, a) => s + a.balance, 0);
+  const plansSum = categories.reduce((s, c) => s + c.planned, 0);
+  const need = plansSum + savings;
+
+  const card = document.getElementById("warningCard");
+  const text = document.getElementById("warningText");
+
+  if (need > wallet) {
+    const overflow = need - wallet;
+    text.textContent =
+      "Категории (" + formatMoney(plansSum) +
+      ") и сбережения (" + formatMoney(savings) +
+      ") превышают Кошелёк (" + formatMoney(wallet) +
+      ") на " + formatMoney(overflow) +
+      ". Снизьте сбережения или урежьте план по категориям.";
+    card.hidden = false;
+  } else {
+    card.hidden = true;
+  }
 }
 
 // =====================================================
@@ -101,6 +148,8 @@ function renderWallet() {
 
   // «Кошелёк» = сумма всех счетов
   document.getElementById("walletTotal").textContent = formatMoney(total);
+
+  updateWarning();
 }
 
 function addAccount() {
@@ -158,6 +207,7 @@ function renderBudget() {
     planned.addEventListener("change", () => {
       cat.planned = Number(planned.value) || 0;
       saveCategories();
+      updateWarning();
     });
 
     const del = document.createElement("button");
@@ -169,6 +219,8 @@ function renderBudget() {
     li.append(name, planned, del);
     list.append(li);
   }
+
+  updateWarning();
 }
 
 function addCategory() {
@@ -203,11 +255,26 @@ function removeCategory(id) {
 }
 
 // =====================================================
+//  ОТРИСОВКА: блок «Сбережения»
+// =====================================================
+
+function renderSavings() {
+  document.getElementById("savingsValue").value = savings;
+}
+
+// =====================================================
 //  ЗАПУСК
 // =====================================================
 
 document.getElementById("addAccountBtn").addEventListener("click", addAccount);
 document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
 
+document.getElementById("savingsValue").addEventListener("change", (e) => {
+  savings = Number(e.target.value) || 0;
+  saveSavings();
+  updateWarning();
+});
+
 renderWallet();
 renderBudget();
+renderSavings();

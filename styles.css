@@ -208,6 +208,23 @@ body {
   font-weight: 700;
 }
 
+input.savings-value {
+  width: 120px;
+  padding: 6px 8px;
+  border: 1px solid #d0d0d0;
+  border-radius: 6px;
+  text-align: right;
+}
+
+/* Карточка-предупреждение */
+.warning {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 /* Цели */
 .goals-list li {
   flex-direction: column;
