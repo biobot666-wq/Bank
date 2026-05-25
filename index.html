@@ -17,11 +17,13 @@
 
     <!-- Ручной ввод расхода -->
     <section class="card expense-input">
-      <input type="number" class="expense-amount" placeholder="0" value="500">
+      <input type="number" id="expenseAmount" class="expense-amount" placeholder="0">
       <select class="currency-select">
         <option value="RUB" selected>руб.</option>
       </select>
-      <button class="btn btn-primary">Добавить расход</button>
+      <select id="expenseCategory" class="expense-select"></select>
+      <select id="expenseAccount" class="expense-select"></select>
+      <button class="btn btn-primary" id="addExpenseBtn">Добавить расход</button>
     </section>
 
     <!-- Два блока: бюджет и кошелёк -->

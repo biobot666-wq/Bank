@@ -48,23 +48,32 @@ body {
 /* Ручной ввод расхода */
 .expense-input {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
 .expense-amount {
   flex: 1;
+  min-width: 100px;
   font-size: 18px;
   padding: 10px 12px;
   border: 1px solid #d0d0d0;
   border-radius: 8px;
 }
 
-.currency-select {
-  font-size: 16px;
+.currency-select,
+.expense-select {
+  font-size: 14px;
   padding: 10px;
   border: 1px solid #d0d0d0;
   border-radius: 8px;
+  background: #ffffff;
+}
+
+.expense-select {
+  flex: 1;
+  min-width: 120px;
 }
 
 /* Кнопки */
@@ -206,6 +215,13 @@ body {
 .savings-value {
   font-size: 20px;
   font-weight: 700;
+}
+
+/* Метка «потрачено» в строке категории */
+.spent-label {
+  font-size: 12px;
+  color: #777;
+  white-space: nowrap;
 }
 
 input.savings-value {

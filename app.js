@@ -1,5 +1,5 @@
 // app.js — логика приложения «Бюджет».
-// Шаг 4: сбережения + проверка равенства «категории + сбережения ≤ Кошелёк».
+// Шаг 5: ручной ввод расхода — уменьшает остаток категории и баланс счёта.
 
 // =====================================================
 //  СЧЕТА (блок «Кошелёк»)
@@ -80,6 +80,26 @@ function saveSavings() {
 let savings = loadSavings();
 
 // =====================================================
+//  РАСХОДЫ (история операций)
+// =====================================================
+
+const EXPENSES_KEY = "budget_app_expenses";
+
+function loadExpenses() {
+  const saved = localStorage.getItem(EXPENSES_KEY);
+  if (saved) {
+    return JSON.parse(saved);
+  }
+  return [];
+}
+
+function saveExpenses() {
+  localStorage.setItem(EXPENSES_KEY, JSON.stringify(expenses));
+}
+
+let expenses = loadExpenses();
+
+// =====================================================
 //  ВСПОМОГАТЕЛЬНОЕ
 // =====================================================
 
@@ -150,6 +170,7 @@ function renderWallet() {
   document.getElementById("walletTotal").textContent = formatMoney(total);
 
   updateWarning();
+  refreshExpenseFormIfReady();
 }
 
 function addAccount() {
@@ -199,6 +220,11 @@ function renderBudget() {
       saveCategories();
     });
 
+    // Сколько уже потрачено в этой категории
+    const spent = document.createElement("span");
+    spent.className = "spent-label";
+    spent.textContent = "потрачено " + formatMoney(cat.spent);
+
     // Поле «план» — целевая сумма расходов на месяц
     const planned = document.createElement("input");
     planned.type = "number";
@@ -216,11 +242,12 @@ function renderBudget() {
     del.title = "Удалить категорию";
     del.addEventListener("click", () => removeCategory(cat.id));
 
-    li.append(name, planned, del);
+    li.append(name, spent, planned, del);
     list.append(li);
   }
 
   updateWarning();
+  refreshExpenseFormIfReady();
 }
 
 function addCategory() {
@@ -263,11 +290,99 @@ function renderSavings() {
 }
 
 // =====================================================
+//  ОТРИСОВКА: форма ввода расхода
+// =====================================================
+
+// Безопасный вызов из renderWallet/renderBudget на старте,
+// когда форма расхода ещё может быть не нужна.
+function refreshExpenseFormIfReady() {
+  if (document.getElementById("expenseCategory")) {
+    renderExpenseForm();
+  }
+}
+
+// Перезаполняет списки категорий и счетов в форме расхода.
+// Вызывается при любом изменении категорий или счетов.
+function renderExpenseForm() {
+  const catSelect = document.getElementById("expenseCategory");
+  const accSelect = document.getElementById("expenseAccount");
+
+  const prevCat = catSelect.value;
+  const prevAcc = accSelect.value;
+
+  catSelect.innerHTML = "";
+  for (const cat of categories) {
+    const opt = document.createElement("option");
+    opt.value = cat.id;
+    opt.textContent = cat.name;
+    catSelect.append(opt);
+  }
+  if (prevCat) catSelect.value = prevCat;
+
+  accSelect.innerHTML = "";
+  for (const acc of accounts) {
+    const opt = document.createElement("option");
+    opt.value = acc.id;
+    opt.textContent = acc.name;
+    accSelect.append(opt);
+  }
+  if (prevAcc) accSelect.value = prevAcc;
+}
+
+// =====================================================
+//  ДЕЙСТВИЕ: добавить расход
+// =====================================================
+
+function addExpense() {
+  const amountInput = document.getElementById("expenseAmount");
+  const catSelect = document.getElementById("expenseCategory");
+  const accSelect = document.getElementById("expenseAccount");
+
+  const amount = Number(amountInput.value);
+  if (!amount || amount <= 0) {
+    alert("Введите сумму расхода");
+    return;
+  }
+
+  const catId = Number(catSelect.value);
+  const accId = Number(accSelect.value);
+
+  const cat = categories.find((c) => c.id === catId);
+  const acc = accounts.find((a) => a.id === accId);
+  if (!cat || !acc) {
+    alert("Выберите категорию и счёт");
+    return;
+  }
+
+  // Уменьшаем баланс счёта и увеличиваем «потрачено» в категории
+  acc.balance -= amount;
+  cat.spent += amount;
+
+  expenses.push({
+    id: Date.now(),
+    amount: amount,
+    categoryId: catId,
+    accountId: accId,
+    date: new Date().toISOString(),
+  });
+
+  saveAccounts();
+  saveCategories();
+  saveExpenses();
+
+  amountInput.value = "";
+
+  renderWallet();
+  renderBudget();
+}
+
+// =====================================================
 //  ЗАПУСК
 // =====================================================
 
 document.getElementById("addAccountBtn").addEventListener("click", addAccount);
 document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
+document.getElementById("addExpenseBtn").addEventListener("click", addExpense);
 
 document.getElementById("savingsValue").addEventListener("change", (e) => {
   savings = Number(e.target.value) || 0;
@@ -278,3 +393,4 @@ document.getElementById("savingsValue").addEventListener("change", (e) => {
 renderWallet();
 renderBudget();
 renderSavings();
+renderExpenseForm();
