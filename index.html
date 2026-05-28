@@ -59,6 +59,7 @@
       <span class="savings-arrow">↓</span>
       <span class="savings-label">Желаемые сбережения</span>
       <input type="number" id="savingsValue" class="savings-value">
+      <button class="btn btn-secondary" id="closeMonthBtn" title="Распределить сбережения по целям и обнулить «потрачено»">Закрыть месяц</button>
     </section>
 
     <!-- Предупреждение: категории + сбережения > Кошелёк -->
@@ -83,6 +84,18 @@
     </section>
 
   </main>
+
+  <!-- Модальное окно: покрытие перерасхода из целей -->
+  <div class="modal" id="overflowModal" hidden>
+    <div class="modal-content">
+      <h3>Перерасход в категории</h3>
+      <div class="modal-body" id="overflowModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-secondary" id="overflowCancelBtn">Отмена</button>
+        <button class="btn btn-primary" id="overflowConfirmBtn" disabled>Подтвердить</button>
+      </div>
+    </div>
+  </div>
 
   <script src="app.js"></script>
 </body>

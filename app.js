@@ -1,5 +1,5 @@
 // app.js — логика приложения «Бюджет».
-// Шаг 6: блок «Цели» — добавление, редактирование, важность, прогресс, прогноз.
+// Шаг 7: «Закрыть месяц» + покрытие перерасхода из целей через модальное окно.
 
 // =====================================================
 //  СЧЕТА (блок «Кошелёк»)
@@ -37,11 +37,11 @@ const CATEGORIES_KEY = "budget_app_categories";
 // Категории по умолчанию (показываются при самом первом запуске).
 // planned — целевая сумма расходов на месяц, spent — уже потрачено.
 const DEFAULT_CATEGORIES = [
-  { id: 1, name: "Продукты", planned: 89500, spent: 0 },
-  { id: 2, name: "Развлечения", planned: 10000, spent: 0 },
-  { id: 3, name: "Хозяйство", planned: 30000, spent: 0 },
-  { id: 4, name: "Спорт", planned: 40000, spent: 0 },
-  { id: 5, name: "Непредвиденные", planned: 15000, spent: 0 },
+  { id: 1, name: "Продукты",       planned: 89500, spent: 0, overflow_covered: 0 },
+  { id: 2, name: "Развлечения",    planned: 10000, spent: 0, overflow_covered: 0 },
+  { id: 3, name: "Хозяйство",      planned: 30000, spent: 0, overflow_covered: 0 },
+  { id: 4, name: "Спорт",          planned: 40000, spent: 0, overflow_covered: 0 },
+  { id: 5, name: "Непредвиденные", planned: 15000, spent: 0, overflow_covered: 0 },
 ];
 
 function loadCategories() {
@@ -57,6 +57,11 @@ function saveCategories() {
 }
 
 let categories = loadCategories();
+
+// Миграция: гарантируем поле overflow_covered у всех категорий
+for (const c of categories) {
+  if (c.overflow_covered === undefined) c.overflow_covered = 0;
+}
 
 // =====================================================
 //  СБЕРЕЖЕНИЯ (желаемая сумма, которую хочется отложить)
@@ -134,6 +139,12 @@ let goals = loadGoals();
 // Красивый формат числа: 100000 -> "100 000"
 function formatMoney(n) {
   return n.toLocaleString("ru-RU");
+}
+
+// Сколько перерасхода в категории ещё НЕ покрыто из целей
+function unresolvedOverflow(cat) {
+  const over = Math.max(0, cat.spent - cat.planned);
+  return Math.max(0, over - (cat.overflow_covered || 0));
 }
 
 // =====================================================
@@ -270,7 +281,32 @@ function renderBudget() {
     del.title = "Удалить категорию";
     del.addEventListener("click", () => removeCategory(cat.id));
 
-    li.append(name, spent, planned, del);
+    // Если есть непокрытый перерасход — подсветка строки и кнопка «!»
+    const unresolved = unresolvedOverflow(cat);
+    if (unresolved > 0) {
+      li.classList.add("overflow");
+      const warn = document.createElement("button");
+      warn.className = "btn-warn";
+      warn.textContent = "!";
+      warn.title =
+        "Перерасход " + formatMoney(unresolved) +
+        " ₽. Кликни, чтобы покрыть его из целей.";
+      warn.addEventListener("click", () => {
+        openOverflowModal(cat.id, unresolved, {
+          onResolve: () => {
+            saveCategories();
+            saveGoals();
+            renderBudget();
+            renderGoals();
+          },
+          onCancel: () => {},
+        });
+      });
+      li.append(name, spent, warn, planned, del);
+    } else {
+      li.append(name, spent, planned, del);
+    }
+
     list.append(li);
   }
 
@@ -295,6 +331,7 @@ function addCategory() {
     name: name,
     planned: planned || 0,
     spent: 0,
+    overflow_covered: 0,
   });
   saveCategories();
   renderBudget();
@@ -543,26 +580,240 @@ function addExpense() {
     return;
   }
 
-  // Уменьшаем баланс счёта и увеличиваем «потрачено» в категории
+  // Считаем, появится ли НОВЫЙ непокрытый перерасход после этого расхода
+  const unresolvedBefore = unresolvedOverflow(cat);
+
+  // Применяем расход (физически: счёт уменьшается, потрачено растёт)
   acc.balance -= amount;
   cat.spent += amount;
 
-  expenses.push({
+  const expenseRecord = {
     id: Date.now(),
     amount: amount,
     categoryId: catId,
     accountId: accId,
     date: new Date().toISOString(),
-  });
+  };
+  expenses.push(expenseRecord);
 
-  saveAccounts();
+  const unresolvedAfter = unresolvedOverflow(cat);
+  const newOverflow = unresolvedAfter - unresolvedBefore;
+
+  // Функция сохранения и перерисовки всего, что могло измениться
+  function commit() {
+    saveAccounts();
+    saveCategories();
+    saveExpenses();
+    saveGoals();
+    amountInput.value = "";
+    renderWallet();
+    renderBudget();
+    renderGoals();
+  }
+
+  if (newOverflow > 0) {
+    // Расход создал новый перерасход — заставляем выбрать цель
+    openOverflowModal(cat.id, newOverflow, {
+      onResolve: () => {
+        commit();
+      },
+      onCancel: () => {
+        // Откатываем расход целиком
+        acc.balance += amount;
+        cat.spent -= amount;
+        expenses.pop();
+        // Не сохраняем — мы изначально не успели сохранить
+        renderWallet();
+        renderBudget();
+      },
+    });
+  } else {
+    commit();
+  }
+}
+
+// =====================================================
+//  МОДАЛЬНОЕ ОКНО: покрытие перерасхода из целей
+// =====================================================
+
+// Текущее состояние модалки. null, если она закрыта.
+//   categoryId       — категория, в которой перерасход
+//   initialAmount    — сколько ₽ нужно покрыть в этой сессии
+//   remaining        — сколько ещё осталось распределить
+//   pending          — массив { goalId, amount } — «черновик» списаний
+//   onResolve        — что вызвать после успешного покрытия
+//   onCancel         — что вызвать при отмене
+let overflowState = null;
+
+function openOverflowModal(categoryId, amount, callbacks) {
+  overflowState = {
+    categoryId: categoryId,
+    initialAmount: amount,
+    remaining: amount,
+    pending: [],
+    onResolve: callbacks.onResolve || function () {},
+    onCancel:  callbacks.onCancel  || function () {},
+  };
+  document.getElementById("overflowModal").hidden = false;
+  renderOverflowModal();
+}
+
+function renderOverflowModal() {
+  const body = document.getElementById("overflowModalBody");
+  body.innerHTML = "";
+
+  const cat = categories.find((c) => c.id === overflowState.categoryId);
+
+  // Заголовок: какая категория и сколько надо покрыть
+  const head = document.createElement("div");
+  head.innerHTML =
+    "Категория: <b>" + (cat ? cat.name : "?") + "</b><br>" +
+    "Нужно покрыть: <b>" + formatMoney(overflowState.initialAmount) + " ₽</b>";
+  body.append(head);
+
+  // Сколько ещё осталось распределить
+  const rem = document.createElement("div");
+  rem.className = "modal-remaining";
+  if (overflowState.remaining > 0) {
+    rem.textContent = "Осталось распределить: " + formatMoney(overflowState.remaining) + " ₽";
+  } else {
+    rem.textContent = "Полностью покрыто";
+    rem.style.color = "#34c759";
+  }
+  body.append(rem);
+
+  // Список целей, из которых можно взять (с учётом уже выбранных черновиков)
+  if (overflowState.remaining > 0) {
+    const title = document.createElement("div");
+    title.className = "muted";
+    title.textContent = "Из какой цели забрать:";
+    body.append(title);
+
+    const list = document.createElement("ul");
+    list.className = "modal-list";
+
+    for (const g of goals) {
+      const pending = overflowState.pending.find((p) => p.goalId === g.id);
+      const pendingAmount = pending ? pending.amount : 0;
+      const effective = g.accumulated - pendingAmount;
+      if (effective <= 0) continue;
+
+      const li = document.createElement("li");
+
+      const label = document.createElement("span");
+      label.textContent = g.name + " (доступно " + formatMoney(effective) + " ₽)";
+
+      const btn = document.createElement("button");
+      btn.className = "btn btn-primary btn-sm";
+      btn.textContent = "Взять";
+      btn.addEventListener("click", () => {
+        const take = Math.min(overflowState.remaining, effective);
+        if (pending) {
+          pending.amount += take;
+        } else {
+          overflowState.pending.push({ goalId: g.id, amount: take });
+        }
+        overflowState.remaining -= take;
+        renderOverflowModal();
+      });
+
+      li.append(label, btn);
+      list.append(li);
+    }
+
+    if (!list.children.length) {
+      const empty = document.createElement("div");
+      empty.className = "muted";
+      empty.textContent = "Нет целей с накоплениями. Отмени операцию или пополни цель.";
+      body.append(empty);
+    } else {
+      body.append(list);
+    }
+  }
+
+  // Черновик: уже выбранные списания
+  if (overflowState.pending.length > 0) {
+    const title = document.createElement("div");
+    title.className = "muted";
+    title.textContent = "Уже выбрано:";
+    body.append(title);
+
+    const list = document.createElement("ul");
+    list.className = "modal-list";
+    for (const p of overflowState.pending) {
+      const g = goals.find((gg) => gg.id === p.goalId);
+      const li = document.createElement("li");
+      li.textContent = (g ? g.name : "?") + ": " + formatMoney(p.amount) + " ₽";
+      list.append(li);
+    }
+    body.append(list);
+  }
+
+  // Кнопка «Подтвердить» активна только когда всё распределено
+  document.getElementById("overflowConfirmBtn").disabled =
+    (overflowState.remaining > 0);
+}
+
+function confirmOverflow() {
+  const cat = categories.find((c) => c.id === overflowState.categoryId);
+  for (const p of overflowState.pending) {
+    const g = goals.find((gg) => gg.id === p.goalId);
+    if (g) g.accumulated -= p.amount;
+  }
+  cat.overflow_covered = (cat.overflow_covered || 0) + overflowState.initialAmount;
+
+  const cb = overflowState.onResolve;
+  closeOverflowModal();
+  cb();
+}
+
+function cancelOverflow() {
+  const cb = overflowState.onCancel;
+  closeOverflowModal();
+  cb();
+}
+
+function closeOverflowModal() {
+  document.getElementById("overflowModal").hidden = true;
+  overflowState = null;
+}
+
+// =====================================================
+//  ДЕЙСТВИЕ: «Закрыть месяц»
+//  — сбережения распределяются по целям сверху вниз
+//  — spent и overflow_covered у категорий обнуляются
+// =====================================================
+
+function closeMonth() {
+  if (!confirm(
+    "Закрыть месяц?\n\n" +
+    "• Сбережения (" + formatMoney(savings) + " ₽) распределятся по целям сверху вниз.\n" +
+    "• «Потрачено» у всех категорий обнулится."
+  )) return;
+
+  let remaining = savings;
+  for (const g of goals) {
+    if (remaining <= 0) break;
+    const need = Math.max(0, g.target - g.accumulated);
+    const add = Math.min(need, remaining);
+    g.accumulated += add;
+    remaining -= add;
+  }
+
+  for (const c of categories) {
+    c.spent = 0;
+    c.overflow_covered = 0;
+  }
+
   saveCategories();
-  saveExpenses();
+  saveGoals();
 
-  amountInput.value = "";
-
-  renderWallet();
   renderBudget();
+  renderGoals();
+
+  if (remaining > 0) {
+    alert("Все цели закрыты. Нераспределённый остаток: " + formatMoney(remaining) + " ₽ (остался в кошельке).");
+  }
 }
 
 // =====================================================
@@ -573,6 +824,10 @@ document.getElementById("addAccountBtn").addEventListener("click", addAccount);
 document.getElementById("addCategoryBtn").addEventListener("click", addCategory);
 document.getElementById("addExpenseBtn").addEventListener("click", addExpense);
 document.getElementById("addGoalBtn").addEventListener("click", addGoal);
+document.getElementById("closeMonthBtn").addEventListener("click", closeMonth);
+
+document.getElementById("overflowConfirmBtn").addEventListener("click", confirmOverflow);
+document.getElementById("overflowCancelBtn").addEventListener("click", cancelOverflow);
 
 document.getElementById("savingsValue").addEventListener("change", (e) => {
   savings = Number(e.target.value) || 0;
